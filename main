@@ -109,3 +109,66 @@ dataGen.fit(X_train)
 y_train = to_categorical(y_train,noOfclasses)
 y_test = to_categorical(y_test,noOfclasses)
 y_validation = to_categorical(y_validation,noOfclasses)
+
+
+def myModel():
+    noOfFilters = 60
+    sizeOfFilters1 = (5,5)
+    sizeOfFilters2 = (3,3)
+    sizeofPool = (2,2)
+    noOfNode = 500
+
+    model = Sequential()
+    model.add((Conv2D(noOfFilters,sizeOfFilters1,input_shape=(imageDimensions[0],
+                                                              imageDimensions[1],
+                                                              1),activation='relu',
+                                                                )))
+    model.add((Conv2D(noOfFilters,sizeOfFilters1,activation='relu')))
+    model.add(MaxPooling2D(pool_size = sizeofPool))
+    model.add((Conv2D(noOfFilters//2,sizeOfFilters2,activation='relu')))
+    model.add((Conv2D(noOfFilters//2,sizeOfFilters2,activation='relu')))
+    model.add(MaxPooling2D(pool_size=sizeofPool))
+    model.add(Dropout(0.5))
+
+
+    model.add(Flatten())
+    model.add(Dense(noOfNode,activation = 'relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(noOfclasses,activation = 'softmax' ))
+    model.compile(Adam(learning_rate=0.001),loss = 'categorical_crossentropy',
+                  metrics= ['accuracy'])
+    return model
+
+model = myModel()
+print(model.summary())
+
+
+
+history = model.fit_generator(dataGen.flow(X_train,y_train,
+                                 batch_size=batchSizeVal),
+                                 steps_per_epoch=stepsPerEpoch,
+                                 epochs=epochsVal,
+                                 validation_data=(X_validation,y_validation),
+                                 shuffle =1 )
+
+plt.figure(1)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.legend(['training', 'validation'])
+plt.title('loss')
+plt.xlabel('epoch')
+
+plt.figure(2)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.legend(['training', 'validation'])
+plt.title('Accuracy')
+plt.xlabel('epoch')
+plt.show()
+score = model.evaluate(X_test,y_test,verbose=0)
+print('test score = ',score[0])
+print('test Accuracy = ',score[1])
+
+pickle_out = open("model_trained.p","wb")
+pickle.dump(model,pickle_out)
+pickle_out.close()
